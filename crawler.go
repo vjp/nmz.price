@@ -27,27 +27,28 @@ func fetch  (pagenum int, out chan<- string) {
 
     resp, err := client.Get(baseurl)
     if err!=nil {
-            panic (err);
+        panic (err);
+    }
+    defer resp.Body.Close();
+
+    if resp.StatusCode==200 {
+        body,err:=ioutil.ReadAll(resp.Body);
+        if err!=nil {
+            panic(err);
         }
-        if resp.StatusCode==200 {
-            defer resp.Body.Close();
-            body,err:=ioutil.ReadAll(resp.Body);
-            if err!=nil {
-                panic(err);
-            }
-            re    := regexp.MustCompile("(?s)<span class=\"product__name\" itemprop=\"name\">.+?<div class=\"product__price\">.+?</div>");   
-            restr := regexp.MustCompile("(?s)Монета 1894 – 1917 (.+?)</a>.+<meta itemprop=\"price\" content=\"(.+?)\">");
-            for _, value := range re.FindAllString(string(body), -1){
-                m := restr.FindStringSubmatch(value) 
-                if m!=nil {
-                    c := coin {name:m[1],price:m[2]};
-                    fmt.Println(c.name,"----",c.price);
-                }    
-            }
-            out <- fmt.Sprintf("num:%d success %s",pagenum,baseurl);
-        } else {    
-            out <- fmt.Sprintf("num:%d skip %s",pagenum,baseurl);
-        }    
+        re    := regexp.MustCompile("(?s)<span class=\"product__name\" itemprop=\"name\">.+?<div class=\"product__price\">.+?</div>");   
+        restr := regexp.MustCompile("(?s)Монета 1894 – 1917 (.+?)</a>.+<meta itemprop=\"price\" content=\"(.+?)\">");
+        for _, value := range re.FindAllString(string(body), -1){
+            m := restr.FindStringSubmatch(value) 
+            if m!=nil {
+                c := coin {name:m[1],price:m[2]};
+                fmt.Println(c.name,"----",c.price);
+            }    
+        }
+        out <- fmt.Sprintf("num:%d success %s",pagenum,baseurl);
+    } else {    
+        out <- fmt.Sprintf("num:%d skip %s",pagenum,baseurl);
+    }    
 }
 
 
