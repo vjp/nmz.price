@@ -5,15 +5,14 @@ import "io/ioutil"
 import "fmt"
 import "regexp"
 import "time"
+import "encoding/json"
 
-
-type coin struct{
-    name string
-    price string
-};
 
 
 func fetch  (pagenum int, out chan<- string) {
+
+    cns := make(map[string]interface{});
+
     client := &http.Client{
         CheckRedirect: func(req *http.Request, via []*http.Request) error {
         return http.ErrUseLastResponse
@@ -37,15 +36,22 @@ func fetch  (pagenum int, out chan<- string) {
             panic(err);
         }
         re    := regexp.MustCompile("(?s)<span class=\"product__name\" itemprop=\"name\">.+?<div class=\"product__price\">.+?</div>");   
-        restr := regexp.MustCompile("(?s)Монета 1894 – 1917 (.+?)</a>.+<meta itemprop=\"price\" content=\"(.+?)\">");
+        restr := regexp.MustCompile("(?s).+?<a href='(.+?)'.+?Монета 1894 – 1917 (.+?)</a>.+<meta itemprop=\"price\" content=\"(.+?)\">");
         for _, value := range re.FindAllString(string(body), -1){
             m := restr.FindStringSubmatch(value) 
             if m!=nil {
-                c := coin {name:m[1],price:m[2]};
-                fmt.Println(c.name,"----",c.price);
+                curl:=m[1];
+                cns[curl]=map[string]interface{}{
+                        "url":m[1],
+                        "name":m[2],
+                        "price":m[3] };
             }    
         }
-        out <- fmt.Sprintf("num:%d success %s",pagenum,baseurl);
+        j, err := json.Marshal(cns)
+        if err!=nil {
+            panic(err);
+        }
+        out <- string(j);
     } else {    
         out <- fmt.Sprintf("num:%d skip %s",pagenum,baseurl);
     }    
