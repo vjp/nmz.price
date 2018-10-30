@@ -53,7 +53,7 @@ func fetch  (pagenum int, out chan<- string) {
         }
         out <- string(j);
     } else {    
-        out <- fmt.Sprintf("num:%d skip %s",pagenum,baseurl);
+        out <- "{}";
     }    
 }
 
@@ -61,14 +61,25 @@ func fetch  (pagenum int, out chan<- string) {
 func main () {
     start := time.Now();
     pages :=10;
+    
 
     ch := make(chan string)
 
     for i:=1; i<pages; i ++ {
         go fetch(i,ch);
     }
-    for j:=1; j<pages; j++ {
-        fmt.Println(<-ch);
+    for i:=1; i<pages; i++ {
+        
+        j:=<-ch;
+
+        var data interface{};
+        err := json.Unmarshal([]byte(j), &data);
+
+        if err!=nil {
+            panic(err);
+        }
+
+        fmt.Println(data);
     }    
     fmt.Printf("took %v\n",  time.Since(start))
   
