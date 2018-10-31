@@ -5,13 +5,21 @@ import "io/ioutil"
 import "fmt"
 import "regexp"
 import "time"
-import "encoding/json"
+
+type coin struct {
+    url string
+    name string
+    price string
+};
+type coinresult struct {
+     status int
+     coinpage [48]coin
+};
 
 
+func fetch  (pagenum int, out chan<- coinresult) {
 
-func fetch  (pagenum int, out chan<- string) {
-
-    cns := make(map[string]interface{});
+    var r coinresult;   
 
     client := &http.Client{
         CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -37,24 +45,23 @@ func fetch  (pagenum int, out chan<- string) {
         }
         re    := regexp.MustCompile("(?s)<span class=\"product__name\" itemprop=\"name\">.+?<div class=\"product__price\">.+?</div>");   
         restr := regexp.MustCompile("(?s).+?<a href='(.+?)'.+?Монета 1894 – 1917 (.+?)</a>.+<meta itemprop=\"price\" content=\"(.+?)\">");
+        i:=0;
         for _, value := range re.FindAllString(string(body), -1){
             m := restr.FindStringSubmatch(value) 
             if m!=nil {
-                curl:=m[1];
-                cns[curl]=map[string]interface{}{
-                        "url":m[1],
-                        "name":m[2],
-                        "price":m[3] };
+                r.coinpage[i]=coin{
+                    url:m[1],
+                    name:m[2],
+                    price:m[3] };
+                i++;
             }    
         }
-        j, err := json.Marshal(cns)
-        if err!=nil {
-            panic(err);
-        }
-        out <- string(j);
+        r.status=1;
     } else {    
-        out <- "{}";
-    }    
+        r.status=0;
+    }
+    out <- r;
+    
 }
 
 
@@ -62,24 +69,16 @@ func main () {
     start := time.Now();
     pages :=10;
     
-
-    ch := make(chan string)
+    ch := make(chan coinresult);
 
     for i:=1; i<pages; i ++ {
         go fetch(i,ch);
     }
     for i:=1; i<pages; i++ {
         
-        j:=<-ch;
-
-        var data interface{};
-        err := json.Unmarshal([]byte(j), &data);
-
-        if err!=nil {
-            panic(err);
-        }
-
-        fmt.Println(data);
+        cr:=<-ch;
+      
+        fmt.Println(cr);
     }    
     fmt.Printf("took %v\n",  time.Since(start))
   
