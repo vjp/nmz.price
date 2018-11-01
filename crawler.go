@@ -77,8 +77,16 @@ func main () {
     for i:=1; i<pages; i++ {
         
         cr:=<-ch;
-      
-        fmt.Println(cr);
+        for i:=0; i<48; i++ {
+            //fmt.Println(cr.coinpage[i].name);
+            re  := regexp.MustCompile(`Николай II (.+?) (\d{4})(.*)`); 
+            m   := re.FindStringSubmatch(cr.coinpage[i].name);
+            if (m!=nil) {   
+              fmt.Println(m[1],"----",m[2],"----",m[3]);
+            } else {
+              fmt.Println("not found")  
+            }  
+        }
     }    
     fmt.Printf("took %v\n",  time.Since(start))
   
