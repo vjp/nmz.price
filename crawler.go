@@ -5,6 +5,7 @@ import "io/ioutil"
 import "fmt"
 import "regexp"
 import "time"
+//import "container/list"
 
 type coin struct {
     url string
@@ -43,10 +44,11 @@ func fetch  (pagenum int, out chan<- coinresult) {
         if err!=nil {
             panic(err);
         }
-        re    := regexp.MustCompile("(?s)<span class=\"product__name\" itemprop=\"name\">.+?<div class=\"product__price\">.+?</div>");   
-        restr := regexp.MustCompile("(?s).+?<a href='(.+?)'.+?Монета 1894 – 1917 (.+?)</a>.+<meta itemprop=\"price\" content=\"(.+?)\">");
+        re    := regexp.MustCompile("(?s)<div class=\"good_name\">.+?<div class=\"good_price\">.+?</div>");   
+        restr := regexp.MustCompile("(?s)<a itemprop=\"name\" href=\"(.+?)\".+?Монета 1894 – 1917 (.+?)</a>.+<meta itemprop=\"price\" content=\"(.+?)\">");
         i:=0;
         for _, value := range re.FindAllString(string(body), -1){
+            //fmt.Println(value);
             m := restr.FindStringSubmatch(value) 
             if m!=nil {
                 r.coinpage[i]=coin{
@@ -67,9 +69,12 @@ func fetch  (pagenum int, out chan<- coinresult) {
 
 func main () {
     start := time.Now();
-    pages :=10;
+    pages :=20;
     
     ch := make(chan coinresult);
+    
+    var cl []coin;
+    cd := make(map[string][]string) 
 
     for i:=1; i<pages; i ++ {
         go fetch(i,ch);
@@ -79,15 +84,25 @@ func main () {
         cr:=<-ch;
         for i:=0; i<48; i++ {
             //fmt.Println(cr.coinpage[i].name);
+            cl = append (cl, cr.coinpage[i]);
             re  := regexp.MustCompile(`Николай II (.+?) (\d{4})(.*)`); 
             m   := re.FindStringSubmatch(cr.coinpage[i].name);
-            if (m!=nil) {   
-              fmt.Println(m[1],"----",m[2],"----",m[3]);
+            if (m!=nil) {  
+               //fmt.Println(m[1],"----",m[2],"----",m[3]);
+               cd[m[1]]=append(cd[m[1]],m[2]); 
+
             } else {
               fmt.Println("not found")  
             }  
         }
     }    
+    for ck, cv := range cd {
+       fmt.Println(ck); 
+       fmt.Println(cv); 
+              
+    }  
+
+    //fmt.Println(cd);
     fmt.Printf("took %v\n",  time.Since(start))
   
 }
