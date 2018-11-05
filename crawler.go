@@ -74,8 +74,7 @@ func main () {
     ch := make(chan coinresult);
     
     var cl []coin;
-    cd := make(map[string][]string) 
-
+    cd := make(map[string]map[string][]string)
     for i:=1; i<pages; i ++ {
         go fetch(i,ch);
     }
@@ -88,9 +87,9 @@ func main () {
             re  := regexp.MustCompile(`Николай II (.+?) (\d{4})(.*)`); 
             m   := re.FindStringSubmatch(cr.coinpage[i].name);
             if (m!=nil) {  
+                if cd[m[1]] == nil { cd[m[1]] = make(map[string][]string) }    
                //fmt.Println(m[1],"----",m[2],"----",m[3]);
-               cd[m[1]]=append(cd[m[1]],m[2]); 
-
+               cd[m[1]][m[2]]=append(cd[m[1]][m[2]],cr.coinpage[i].price); 
             } else {
               fmt.Println("not found")  
             }  
