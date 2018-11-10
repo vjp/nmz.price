@@ -6,6 +6,8 @@ import "fmt"
 import "regexp"
 import "time"
 import "encoding/json"
+import "log"
+import "gopkg.in/yaml.v2"
 //import "reflect"
 //import "sort"
 
@@ -18,6 +20,26 @@ type coinresult struct {
      status int
      coinpage [48]coin
 };
+type conf struct {
+    AKey string `yaml:"accesskey"`
+    SKey string `yaml:"secretkey"`
+}
+
+
+func (c *conf) getConf() *conf {
+
+    yamlFile, err := ioutil.ReadFile("conf.yaml")
+    if err != nil {
+        log.Printf("yamlFile.Get err   #%v ", err)
+    }
+    err = yaml.Unmarshal(yamlFile, c)
+    if err != nil {
+        log.Fatalf("Unmarshal: %v", err)
+    }
+
+    return c
+}
+
 
 
 func fetch  (pagenum int, out chan<- coinresult) {
@@ -72,9 +94,15 @@ func fetch  (pagenum int, out chan<- coinresult) {
 func main () {
     start := time.Now();
     pages :=2;
-    
     ch := make(chan coinresult);
     
+
+    var c conf
+    c.getConf()
+
+    fmt.Println(c.AKey,"----",c.SKey);
+
+
     var cl []coin;
     cd := make(map[string]map[string][]string)
     for i:=1; i<pages; i ++ {
