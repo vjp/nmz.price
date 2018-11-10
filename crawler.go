@@ -5,12 +5,14 @@ import "io/ioutil"
 import "fmt"
 import "regexp"
 import "time"
-//import "container/list"
+import "encoding/json"
+//import "reflect"
+//import "sort"
 
 type coin struct {
-    url string
-    name string
-    price string
+    Url string  `json:"url"`
+    Name string `json:"name"`
+    Price string  `json:"price"`
 };
 type coinresult struct {
      status int
@@ -52,9 +54,9 @@ func fetch  (pagenum int, out chan<- coinresult) {
             m := restr.FindStringSubmatch(value) 
             if m!=nil {
                 r.coinpage[i]=coin{
-                    url:m[1],
-                    name:m[2],
-                    price:m[3] };
+                    Url:m[1],
+                    Name:m[2],
+                    Price:m[3] };
                 i++;
             }    
         }
@@ -69,7 +71,7 @@ func fetch  (pagenum int, out chan<- coinresult) {
 
 func main () {
     start := time.Now();
-    pages :=20;
+    pages :=2;
     
     ch := make(chan coinresult);
     
@@ -85,11 +87,11 @@ func main () {
             //fmt.Println(cr.coinpage[i].name);
             cl = append (cl, cr.coinpage[i]);
             re  := regexp.MustCompile(`Николай II (.+?) (\d{4})(.*)`); 
-            m   := re.FindStringSubmatch(cr.coinpage[i].name);
+            m   := re.FindStringSubmatch(cr.coinpage[i].Name);
             if (m!=nil) {  
                 if cd[m[1]] == nil { cd[m[1]] = make(map[string][]string) }    
                //fmt.Println(m[1],"----",m[2],"----",m[3]);
-               cd[m[1]][m[2]]=append(cd[m[1]][m[2]],cr.coinpage[i].price); 
+               cd[m[1]][m[2]]=append(cd[m[1]][m[2]],cr.coinpage[i].Price); 
             } else {
               fmt.Println("not found")  
             }  
@@ -102,6 +104,19 @@ func main () {
     }  
 
     //fmt.Println(cd);
+
+
+    //clist := reflect.ValueOf(cd).MapKeys()
+    //sort.Strings(clist)
+    //fmt.Println("-----",clist) 
+
+    fmt.Println("=============")
+    jsonStr, err := json.Marshal(cl)
+    if (err!=nil) {
+        panic(err)
+    }
+    fmt.Println(string(jsonStr))
+   
     fmt.Printf("took %v\n",  time.Since(start))
   
 }
