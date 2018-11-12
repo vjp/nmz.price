@@ -12,9 +12,6 @@ import "github.com/aws/aws-sdk-go/aws"
 import "github.com/aws/aws-sdk-go/aws/session"
 import "github.com/aws/aws-sdk-go/service/s3/s3manager"
 import       "github.com/aws/aws-sdk-go/aws/credentials"
-import         "github.com/aws/aws-sdk-go/service/s3"
-
-import "bufio"
 import "os"
 //import "reflect"
 //import "sort"
@@ -105,73 +102,8 @@ func main () {
     ch := make(chan coinresult);
     
 
-    var c conf
-    c.getConf()
+    upload();
 
-
-    token := ""
-    creds := credentials.NewStaticCredentials(c.AKey, c.SKey, token) 
-
-
-    //aws.DefaultConfig.Region = "us-east-1" //<--- change this to yours
-
-    conf := aws.Config{
-        Region: aws.String("us-west-2"),
-        Credentials:      creds,
-    }
-
-    sess := session.New(&conf)
-    svc := s3manager.NewUploader(sess)
-
-    fmt.Println("Uploading file to S3...")
-    result, err := svc.Upload(&s3manager.UploadInput{
-        Bucket: aws.String("vjpctest"),
-        Key:    aws.String(filepath.Base(filename)),
-        Body:   file,
-    })
-    if err != nil {
-        fmt.Println("error", err)
-        os.Exit(1)
-    }
-   
-
-    region := aws.EUCentral   
-          // change this to your AWS region
-         // click on the bucketname in AWS control panel and click Properties
-         // the region for your bucket should be under "Static Website Hosting" tab
-    connection := s3.New(AWSAuth, region)
-    bucket := connection.Bucket("vjpctest") // change this your bucket name
-    path := "test.txt" // this is the target file and location in S3
-    fileToBeUploaded := "crawler.go"
-    file, err := os.Open(fileToBeUploaded)
-    if err != nil {
-        fmt.Println(err)
-        os.Exit(1)
-    }
-    defer file.Close()
-
-   fileInfo, _ := file.Stat()
-   var size int64 = fileInfo.Size()
-   bytes := make([]byte, size)
-
-    // read into buffer
-    buffer := bufio.NewReader(file)
-    _, err = buffer.Read(bytes)
-
-         // then we need to determine the file type
-         // see https://www.socketloop.com/tutorials/golang-how-to-verify-uploaded-file-is-image-or-allowed-file-types
-
-    filetype := http.DetectContentType(bytes)
-    err = bucket.Put(path, bytes, filetype, s3.ACL("public-read"),s3.Options{})
-
-    if err != nil {
-        fmt.Println("put error",err)
-        os.Exit(1)
-    }
-
-    fmt.Printf("Uploaded to %s with %v bytes to S3.\n\n", path, size)
-
-  
 
 
     var cl []coin;
@@ -219,3 +151,44 @@ func main () {
     fmt.Printf("took %v\n",  time.Since(start))
   
 }
+
+func upload () {
+     var c conf
+    c.getConf()
+
+
+    token := ""
+    creds := credentials.NewStaticCredentials(c.AKey, c.SKey, token) 
+
+    conf := aws.Config{
+        Region: aws.String("eu-central-1"),
+        Credentials:      creds,
+    }
+
+    sess        := session.New(&conf)
+    svc         := s3manager.NewUploader(sess)
+    filename    := "crawler.go"
+
+    file, err := os.Open(filename)
+    if err != nil {
+        fmt.Println("Failed to open file", filename, err)
+        os.Exit(1)
+    }
+    defer file.Close()
+
+
+
+    fmt.Println("Uploading file to S3...")
+    result, err := svc.Upload(&s3manager.UploadInput{
+        Bucket: aws.String("vjpctest"),
+        Key:    aws.String(filename),
+        Body:   file,
+    })
+    if err != nil {
+        fmt.Println("error", err)
+        os.Exit(1)
+    }
+    fmt.Printf("Successfully uploaded %s to %s\n", filename, result.Location)   
+}
+
+
