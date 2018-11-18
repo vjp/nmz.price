@@ -102,10 +102,6 @@ func main () {
     ch := make(chan coinresult);
     
 
-    upload();
-
-
-
     var cl []coin;
     cd := make(map[string]map[string][]string)
     for i:=1; i<pages; i ++ {
@@ -146,13 +142,13 @@ func main () {
     if (err!=nil) {
         panic(err)
     }
-    fmt.Println(string(jsonStr))
+    upload (string(jsonStr))
    
     fmt.Printf("took %v\n",  time.Since(start))
   
 }
 
-func upload () {
+func upload (jsonstr string) {
      var c conf
     c.getConf()
 
@@ -167,16 +163,25 @@ func upload () {
 
     sess        := session.New(&conf)
     svc         := s3manager.NewUploader(sess)
-    filename    := "crawler.go"
 
-    file, err := os.Open(filename)
+    dt := time.Now()
+  
+    filename    := "coins"+dt.Format("01-02-2006")+".json"
+
+    file, err := os.Create(filename)
+    if err != nil {
+        fmt.Println("Failed to open file", filename, err)
+        os.Exit(1)
+    }
+    file.WriteString(jsonstr)
+    file.Close()
+
+    file, err = os.Open(filename)
     if err != nil {
         fmt.Println("Failed to open file", filename, err)
         os.Exit(1)
     }
     defer file.Close()
-
-
 
     fmt.Println("Uploading file to S3...")
     result, err := svc.Upload(&s3manager.UploadInput{
