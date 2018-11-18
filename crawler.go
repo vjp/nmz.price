@@ -11,8 +11,9 @@ import "gopkg.in/yaml.v2"
 import "github.com/aws/aws-sdk-go/aws"
 import "github.com/aws/aws-sdk-go/aws/session"
 import "github.com/aws/aws-sdk-go/service/s3/s3manager"
-import       "github.com/aws/aws-sdk-go/aws/credentials"
+import  "github.com/aws/aws-sdk-go/aws/credentials"
 import "os"
+import "github.com/ivahaev/go-xlsx-templater"
 //import "reflect"
 //import "sort"
 
@@ -145,6 +146,28 @@ func main () {
     upload (string(jsonStr))
    
     fmt.Printf("took %v\n",  time.Since(start))
+
+
+
+    ctx := map[string]interface{}{
+        "name" : "Github User",
+        "items": []map[string]interface{}{
+            {
+                "name": "Pen",
+                "url": "ffff",
+                "price": 33,
+            },
+            {
+                "name": "Pendd",
+                "url": "ffffdd",
+                "price": 333,
+            },
+        },    
+    }
+    doc := xlst.New()
+    doc.ReadTemplate("./tmpl.xlsx")
+    doc.Render(ctx)
+    doc.Save("./report.xlsx")
   
 }
 
