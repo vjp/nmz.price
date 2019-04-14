@@ -7,6 +7,7 @@ import "regexp"
 import "time"
 import "encoding/json"
 import "log"
+import "strconv"
 import "gopkg.in/yaml.v2"
 import "github.com/aws/aws-sdk-go/aws"
 import "github.com/aws/aws-sdk-go/aws/session"
@@ -57,7 +58,8 @@ func fetch  (pagenum int, out chan<- coinresult) {
         return http.ErrUseLastResponse
     } }
 
-    baseurl:="https://www.numizmatik.ru/shopcoins/1894-1917-nikolai-ii_g574";
+    // #baseurl:="https://www.numizmatik.ru/shopcoins/1894-1917-nikolai-ii_g574";
+    baseurl:="https://www.numizmatik.ru/shopcoins?page=viporder&id=752857";
     if pagenum>1 {
         baseurl+=fmt.Sprintf("/?pagenum=%d",pagenum); 
        
@@ -75,7 +77,7 @@ func fetch  (pagenum int, out chan<- coinresult) {
             panic(err);
         }
         re    := regexp.MustCompile("(?s)<div class=\"good_name\">.+?<div class=\"good_price\">.+?</div>");   
-        restr := regexp.MustCompile("(?s)<a itemprop=\"name\" href=\"(.+?)\".+?Монета 1894 – 1917 (.+?)</a>.+<meta itemprop=\"price\" content=\"(.+?)\">");
+        restr := regexp.MustCompile("(?s)<a itemprop=\"name\" href=\"(.+?)\".+?Монета (Россия|1894 – 1917|1855 – 1881|1881 – 1894) (.+?)</a>.+<meta itemprop=\"price\" content=\"(.+?)\">");
         i:=0;
         for _, value := range re.FindAllString(string(body), -1){
             //fmt.Println(value);
@@ -83,8 +85,8 @@ func fetch  (pagenum int, out chan<- coinresult) {
             if m!=nil {
                 r.coinpage[i]=coin{
                     Url:m[1],
-                    Name:m[2],
-                    Price:m[3] };
+                    Name:m[3],
+                    Price:m[4] };
                 i++;
             }    
         }
@@ -111,17 +113,23 @@ func main () {
     for i:=1; i<pages; i++ {
         
         cr:=<-ch;
-        for i:=0; i<48; i++ {
+        for i:=0; i<20; i++ {
             //fmt.Println(cr.coinpage[i].name);
             cl = append (cl, cr.coinpage[i]);
-            re  := regexp.MustCompile(`Николай II (.+?) (\d{4})(.*)`); 
+            re  := regexp.MustCompile(`(.+?) (\d{4})(.*)`); 
             m   := re.FindStringSubmatch(cr.coinpage[i].Name);
             if (m!=nil) {  
-                if cd[m[1]] == nil { cd[m[1]] = make(map[string][]string) }    
-               //fmt.Println(m[1],"----",m[2],"----",m[3]);
-               cd[m[1]][m[2]]=append(cd[m[1]][m[2]],cr.coinpage[i].Price); 
-            } else {
-              fmt.Println("not found")  
+               // fmt.Println(m[1],"----",m[2],"----",m[3]);
+               price, err := strconv.Atoi(cr.coinpage[i].Price);
+               if (err!=nil) {
+                  fmt.Println("price error");
+               }  
+               if price<1500 { 
+               	   if cd[m[1]] == nil { cd[m[1]] = make(map[string][]string) }
+                   cd[m[1]][m[2]]=append(cd[m[1]][m[2]],cr.coinpage[i].Price); 
+               }
+	    } else {
+              fmt.Println("not found name: "+cr.coinpage[i].Name);  
             }  
         }
     }    
