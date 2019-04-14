@@ -25,7 +25,7 @@ type coin struct {
 };
 type coinresult struct {
      status int
-     coinpage [48]coin
+     coinpage [100]coin
 };
 type conf struct {
     AKey string `yaml:"accesskey"`
@@ -77,18 +77,19 @@ func fetch  (pagenum int, out chan<- coinresult) {
             panic(err);
         }
         re    := regexp.MustCompile("(?s)<div class=\"good_name\">.+?<div class=\"good_price\">.+?</div>");   
-        restr := regexp.MustCompile("(?s)<a itemprop=\"name\" href=\"(.+?)\".+?Монета (Россия|1894 – 1917|1855 – 1881|1881 – 1894) (.+?)</a>.+<meta itemprop=\"price\" content=\"(.+?)\">");
+        restr := regexp.MustCompile("(?s)<a itemprop=\"name\" href=\"(.+?)\".+?Монета (Россия|СССР|1894 – 1917|1855 – 1881|1881 – 1894) (.+?)</a>.+<meta itemprop=\"price\" content=\"(.+?)\">");
         i:=0;
         for _, value := range re.FindAllString(string(body), -1){
             //fmt.Println(value);
             m := restr.FindStringSubmatch(value) 
             if m!=nil {
+                //fmt.Println("-----"+m[1]+"----"+m[3]+"----"+m[4]);
                 r.coinpage[i]=coin{
                     Url:m[1],
                     Name:m[3],
                     Price:m[4] };
                 i++;
-            }    
+            }   
         }
         r.status=1;
     } else {    
